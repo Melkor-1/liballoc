@@ -1,5 +1,5 @@
 CFLAGS 	:= -s
-CFLAGS 	+= -std=c17
+CFLAGS 	+= -std=c2x
 CFLAGS 	+= -no-pie
 CFLAGS  += -g3
 CFLAGS  += -ggdb

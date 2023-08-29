@@ -4,6 +4,8 @@
 #include <pthread.h>
 
 #include <stdlib.h>
+#include <stddef.h>
+#include <stdalign.h>
 #include <errno.h>
 #include <string.h>
 #include <stdint.h>
@@ -11,35 +13,34 @@
 
 #include "liballoc.h"
 
-#define ALIGN 16
 #define MALLOC_LOCK()               (pthread_mutex_lock (&global_malloc_lock))
 #define MALLOC_UNLOCK()             (pthread_mutex_unlock (&global_malloc_lock))
-#define CHUNK_SIZE(chunk)           ((chunk)->s.size)
-#define NEXT_CHUNK(chunk)           ((chunk)->s.next)
-#define IS_CHUNK_FREE(chunk)        ((chunk)->s.is_free)
-#define MARK_CHUNK_FREE(chunk)      ((chunk)->s.is_free = true)
-#define MARK_CHUNK_NONFREE(chunk)   ((chunk)->s.is_free = false)
-#define SET_CHUNK_SIZE(chunk, size) ((chunk)->s.size = (size)) 
-#define SET_NEXT_CHUNK(chunk, val)  ((chunk)->s.next = (val))
+#define CHUNK_SIZE(chunk)           ((chunk)->size)
+#define NEXT_CHUNK(chunk)           ((chunk)->next)
+#define IS_CHUNK_FREE(chunk)        ((chunk)->is_free)
+#define MARK_CHUNK_FREE(chunk)      ((chunk)->is_free = true)
+#define MARK_CHUNK_NONFREE(chunk)   ((chunk)->is_free = false)
+#define SET_CHUNK_SIZE(chunk, size) ((chunk)->size = (size)) 
+#define SET_NEXT_CHUNK(chunk, val)  ((chunk)->next = (val))
+#define SBRK_FAILED                 ((void *) -1) 
 
-union header {
-    struct {
-        size_t size;
-        bool is_free;
-        union header *next;
-    } s;
-    /* Force the header to be aligned to 16 bytes. */
-    char stub[ALIGN];
-};
+/* The C Standard states that the pointer returned if the allocation succeeds is 
+ * suitably aligned so that it may be assigned to a pointer to any type of object
+ * with a fundamental alignment requirement. 
+ */
+typedef struct header {
+    _Alignas (max_align_t) struct header *next;
+    size_t size;
+    bool is_free;
+} header_t;
 
-typedef union header header_t;
 
 static header_t *head, *tail;
 static pthread_mutex_t global_malloc_lock;
 
 static header_t *get_free_block (size_t size)
 {
-    /* Ascertain if there's a free block that can accomodate requested size. */
+    /* Ascertain if there's a free block that can accommodate requested size. */
     for (header_t *curr = head; curr; curr = NEXT_CHUNK(curr)) {
         if (IS_CHUNK_FREE(curr) && CHUNK_SIZE(curr) >= size) {
             return curr;
@@ -55,9 +56,9 @@ void *malloc (size_t size)
      * the behavior is implementation-defined: either a null pointer is returned
      * to indicate an error, or the behavior is as if the size were some non zero
      * value, except that the returned pointer shall not be used to access an object.
-     * We shall opt for the former.
+     * We shall opt for the former. 
      */
-     if (!size) {
+    if (!size || size > SIZE_MAX - sizeof (header_t)) { /* Prevent overflow. */
         return NULL;
     }
     
@@ -71,10 +72,19 @@ void *malloc (size_t size)
         return header + 1;
     }
 
+    /* 
+     * The size requested needs to be a multiple of alignof (max_align_t). 
+     */
+    size_t const padding = size % alignof (max_align_t);
+
+    if (padding) {
+        size += alignof (max_align_t) - padding;
+    }
+
     intptr_t const total_size = (intptr_t) (sizeof (header_t) + size);
     void *const chunk = sbrk (total_size);
     
-    if (chunk == (void *) -1) {
+    if (chunk == SBRK_FAILED) {
         MALLOC_UNLOCK();
         return NULL;
     }
@@ -112,19 +122,18 @@ void *calloc (size_t nmemb, size_t size)
     If neither C2X, nor clang, or gcc can be detected, define them to:
 #endif
 
-    if (size > SIZE_MAX / nmemb) { /* nmemb * size would wrap-around. */
+    if (size < SIZE_MAX / nmemb) { /* Allocation too big. */
         return NULL;
     }
     
-    size_t const total_size = nmemb * size;
-    void *chunk = malloc (total_size);
+    size *= nmemb; 
+    void *chunk = malloc (size);
 
     if (!chunk) {
         return NULL;
     }
 
-    memset (chunk, 0X00, total_size);
-    return chunk;
+    return memset (chunk, 0X00, size);
 }
 
 void *realloc (void *ptr, size_t size)
@@ -164,7 +173,7 @@ void free (void *ptr)
     /* Get a pointer to the current program break address. 
      */
     const void *const prog_brk = sbrk (0);
-    
+   
     /* Ascertain whether the block to be freed is the last one in the
      * list. If so, shrink the size of the heap and release the memory
      * to the OS. Else, keep the block but mark it as free for use. 
