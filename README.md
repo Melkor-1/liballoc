@@ -21,13 +21,13 @@ Link your project with the compiled static or dynamic library.
 
 ## Building the Library
 
-Clone this repository:
+1. Clone this repository:
 ```bash
 git clone https://github.com/your-username/liballoc.git
 cd liballoc
 ```
 
-## Build the library:
+2. Build the library:
 ```
 make
 ```
