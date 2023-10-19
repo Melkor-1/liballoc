@@ -8,7 +8,7 @@
 *   \return     The **malloc** function returns either a null pointer or a pointer to the allocated
 *               space. If the size of the space requested is zero, a null pointer is returned.
 */
-void *malloc (size_t size);
+void *malloc(size_t size);
 
 /**
 *   \brief      The **calloc** function allocates space for an array of *nmemb* objects, each of whose size 
@@ -18,7 +18,7 @@ void *malloc (size_t size);
 *   \return     The **calloc** function returns either a null pointer or a pointer to the allocated space.
 *               If the size of the space requested is zero, a null pointer is returned.
 */
-void *calloc (size_t nmemb, size_t size);
+void *calloc(size_t nmemb, size_t size);
 
 /**
 *   \brief      The **realloc** function deallocates the old object pointed to by *ptr* and returns a pointer to 
@@ -40,7 +40,7 @@ void *calloc (size_t nmemb, size_t size);
 *               if the new object has not been allocated. 
 *              
 */
-void *realloc (void *ptr, size_t size);
+void *realloc(void *ptr, size_t size);
 
 /**
 *   \brief      The **free** function causes the space pointed to by *ptr* to be deallocated, that is, made
@@ -50,6 +50,6 @@ void *realloc (void *ptr, size_t size);
 *   \param      ptr - A pointer to the object to be deallocated.
 *   \return     The **free** function returns no value.
 */
-void free (void *ptr);
+void free(void *ptr);
 
-#endif /* LIBALLOC_H */
+#endif                          /* LIBALLOC_H */
