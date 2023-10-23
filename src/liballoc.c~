@@ -14,7 +14,6 @@
 #include <pthread.h>
 
 #include <stdlib.h>
-#include <stdio.h>
 #include <stddef.h>
 #include <stdalign.h>
 #include <errno.h>
@@ -63,11 +62,10 @@ void *malloc(size_t size)
      * value, except that the returned pointer shall not be used to access an object.
      * We shall opt for the former. 
      */
-    if (!size || size >= SIZE_MAX - sizeof (header_t)) {        /* Prevent overflow. */
+    if (!size || size >= SIZE_MAX - sizeof (header_t)) { /* Prevent overflow. */
         return NULL;
     }
-    
-    puts("HELLO FROM MALLOC()");
+
     MALLOC_LOCK();
     header_t *header = get_free_block(size);
 
@@ -121,7 +119,7 @@ void *calloc(size_t nmemb, size_t size)
         return NULL;
     }
 
-    if (size >= SIZE_MAX / nmemb) {     /* Allocation too big. */
+    if (size >= SIZE_MAX / nmemb) {      /* Allocation too big. */
         return NULL;
     }
 
@@ -132,8 +130,7 @@ void *calloc(size_t nmemb, size_t size)
         memset(chunk, 0, size);
     }
 
-    return chunk;
-}
+    return chunk;}
 
 void *realloc(void *ptr, size_t size)
 {
@@ -143,7 +140,7 @@ void *realloc(void *ptr, size_t size)
 
     const header_t *const header = (header_t *) ptr - 1;
 
-    if (header->size >= size) {
+    if (header->size  >= size) {
         return ptr;
     }
 
@@ -184,11 +181,9 @@ void free(void *ptr)
         if (head == tail) {
             head = tail = NULL;
         } else {
-            for (header_t *tmp = head; tmp; tmp = tmp->next) {
-                if (tmp->next == tail) {
-                    tmp->next = NULL;
-                    tail = tmp;
-                }
+            for (header_t * tmp = head; tmp; tmp = tmp->next) {
+                tmp->next = NULL;
+                tail = tmp;
             }
         }
 

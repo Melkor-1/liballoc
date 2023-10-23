@@ -1,8 +1,6 @@
 #ifndef LIBALLOC_H
 #define LIBALLOC_H
 
-#include <stddef.h>
-
 /**
 *   \brief      The **malloc** function allocates space for an object whose size is specified by *size* 
 *               and whose value is indeterminate.
@@ -31,15 +29,15 @@ void *calloc(size_t nmemb, size_t size);
 *
 *       If *ptr* is a null pointer,the **realloc** function behaves like the **malloc** function for the specified *size*.
 *       Otherwise, if *ptr* does not match a pointer earlier returned by a memory management function, or if the
-*       space has been deallocated by a call to the **free** function, the behavior is undefined. 
+*       space has been deallocated by a call to the **free** or **realloc** function, the behavior is undefined. 
 *       If *size* is nonzero and memory for the new object is not allocated, the old object is not deallocated.
-*       If *size* is zero, a NULL pointer is returned to indicate failure, and the old object is not deallocated,
+*       If *size* is zero and memory for the new object is not allocated, the old object is not deallocated,
 *       and its value shall be unchanged.
 *
 *   \param      ptr   - A pointer to the object to be reallocated.
 *   \param      size  - The new size.
 *   \return     The **realloc** function returns a pointer to the new object, or a null pointer 
-*               if the new object has not been allocated. Requesting zero bytes always fails.
+*               if the new object has not been allocated. 
 *              
 */
 void *realloc(void *ptr, size_t size);
