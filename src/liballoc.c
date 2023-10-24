@@ -14,7 +14,6 @@
 #include <pthread.h>
 
 #include <stdlib.h>
-#include <stdio.h>
 #include <stddef.h>
 #include <stdalign.h>
 #include <errno.h>
@@ -56,39 +55,37 @@ static header_t *get_free_block(size_t size)
 
 void *malloc(size_t size)
 {
-    /*
-     * The C Standard states that if the size of the space requested is zero, 
+ 
+    /* The C Standard states that if the size of the space requested is zero, 
      * the behavior is implementation-defined: either a null pointer is returned
      * to indicate an error, or the behavior is as if the size were some non zero
      * value, except that the returned pointer shall not be used to access an object.
      * We shall opt for the former. 
      */
-    if (!size || size >= SIZE_MAX - sizeof (header_t)) {        /* Prevent overflow. */
+    if (!size) {
         return NULL;
     }
-    
-    puts("HELLO FROM MALLOC()");
-    MALLOC_LOCK();
-    header_t *header = get_free_block(size);
 
-    if (header) {
-        /*
-         * We have an apt free block. 
-         */
-        header->is_free = false;
-        MALLOC_UNLOCK();
-        return header + 1;
-    }
-
-    /*
-     * The size requested needs to be a multiple of alignof (max_align_t). 
-     */
+    /* The size requested needs to be a multiple of alignof (max_align_t). */
     size_t const padding = size % alignof (max_align_t);
 
     if (padding) {
         size += alignof (max_align_t) - padding;
     }
 
+    if (size > SIZE_MAX - sizeof (header_t)) {  /* Prevent overflow. */
+        return NULL;
+    }
+    
+    MALLOC_LOCK();
+    header_t *header = get_free_block(size);
+
+    if (header) {
+        /* We have an apt free block. */
+        header->is_free = false;
+        MALLOC_UNLOCK();
+        return header + 1;
+    }
     intptr_t const total_size = (intptr_t) (sizeof (header_t) + size);
     void *const chunk = sbrk(total_size);
 
@@ -150,8 +147,7 @@ void *realloc(void *ptr, size_t size)
     void *const ret = malloc(size);
 
     if (ret) {
-        /*
-         * Relocate the contents to the new chunkier chunk and 
+        /* Relocate the contents to the new chunkier chunk and 
          * free the old chunk.
          */
         memcpy(ret, ptr, header->size);
@@ -170,13 +166,10 @@ void free(void *ptr)
     MALLOC_LOCK();
     header_t *const header = (header_t *) ptr - 1;
 
-    /*
-     * Get a pointer to the current program break address. 
-     */
+    /* Get a pointer to the current program break address. */
     const void *const prog_brk = sbrk(0);
 
-    /*
-     * Ascertain whether the block to be freed is the last one in the
+    /* Ascertain whether the block to be freed is the last one in the
      * list. If so, shrink the size of the heap and release the memory
      * to the OS. Else, keep the block but mark it as free for use. 
      */
@@ -192,14 +185,12 @@ void free(void *ptr)
             }
         }
 
-        /*
-         * sbrk() with a negative argument decrements the program break,
+        /* sbrk() with a negative argument decrements the program break,
          * which releases memory the memory back to the OS.
          */
         sbrk((intptr_t) (0 - sizeof (header_t) - header->size));
 
-        /*
-         * This lock does not ensure thread-safety, for sbrk() itself
+        /* This lock does not ensure thread-safety, for sbrk() itself
          * is not thread-safe.
          */
         MALLOC_UNLOCK();
