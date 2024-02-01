@@ -38,9 +38,6 @@ This will compile the library and generate both static `(liballoc_$(ARCH)-$(OS).
 ## Contributing
 Contributions are welcome! If you find any issues or want to add new features or improvements, feel free to open a pull request.
 
-## License
-This project is licensed under the MIT License - see the LICENSE file for details.
-
 ## Acknowledgements
 
 The core concepts and code structure of this library were adapted from the tutorial by Arjun Sreedharan: [Memory Allocators 101 - Write a simple memory allocator](https://arjunsreedharan.org/post/148675821737/memory-allocators-101-write-a-simple-memory).
