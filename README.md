@@ -1,5 +1,7 @@
 # liballoc - Custom Memory Allocation Library
 
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://https://github.com/Melkor-1/liballoc/edit/main/LICENSE)
+
 `liballoc` is a memory allocation library written in C that provides custom memory allocation and management functionality using a singly linked list data structure.
 
 ## Features
