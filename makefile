@@ -17,25 +17,33 @@ CFLAGS 	+= -Winline
 CFLAGS 	+= -O2
 
 NAME	:= liballoc_$(shell uname -m)-$(shell uname -s)
-LIBDIR 	:= bin
-SLIB  	:= $(LIBDIR)/$(NAME).a
-DLIB  	:= $(LIBDIR)/$(NAME).so
-SRCS 	:= $(wildcard src/*.c)
-OBJS 	:= $(patsubst src/%.c, obj/%.o, $(SRCS)) 
+LIB_DIR	:= bin
+SLIB  	:= $(LIB_DIR)/$(NAME).a
+DLIB  	:= $(LIB_DIR)/$(NAME).so
+SRC_DIR := src
+SRCS 	:= $(wildcard $(SRC_DIR)/*.c)
+OBJ_DIR := obj
+OBJS 	:= $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(SRCS)) 
 
 all: $(SLIB) $(DLIB)
 
-$(SLIB): $(OBJS)
+$(SLIB): $(OBJS) | $(LIB_DIR)
 	$(AR) $(ARFLAGS) $@ $^ 
 
-$(DLIB): $(OBJS)
+$(DLIB): $(OBJS) | $(LIB_DIR)
 	$(CC) $(CFLAGS) -fPIC -shared $(SRCS) -o $@
 
-obj/%.o: src/%.c
+$(LIB_DIR):
+	mkdir $@
+
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
+$(OBJ_DIR):
+	mkdir $@
+
 clean:
-	$(RM) -rf $(OBJS) 
+	$(RM) -rf $(OBJ_DIR) $(LIB_DIR)
 
 fclean:
 	$(RM) $(SLIB) $(DLIB)
